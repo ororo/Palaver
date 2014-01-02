@@ -50,6 +50,7 @@ int lt_match(char **buffer,char **speech) {
 }
 
 // Open paren (variable) match.
+// Matches the syntax: ( WORD varname )   or  ( LINE varname [optional stopping expression] )
 int op_match(char **buffer,char **speech) {
 
   char *buf = *buffer;
@@ -78,7 +79,7 @@ int op_match(char **buffer,char **speech) {
   *buf = '\0';
 
 
-  if(strcmp(startVarName,"WORD") == 0) {
+  if(strcasecmp(startVarName,"WORD") == 0) { //FIX: case insensitive
     *buf = saveChar;
     if(*buf == '<') {
       lt_match(&buf,&tmpSpeech);
@@ -88,7 +89,7 @@ int op_match(char **buffer,char **speech) {
 	       ++tmpSpeech;
       }
     }
-  } else if(strcmp(startVarName,"LINE") == 0) {
+  } else if(strcasecmp(startVarName,"LINE") == 0) { //FIX: case insensitive
     // solution, make Line in this format
     // (Line varname Match Until this)
     // With Match Until this being everything until the
@@ -196,6 +197,17 @@ int op_match(char **buffer,char **speech) {
   return 0;
 }
 
+/**
+* Generic parenthesis matcher.
+* Return true if the current line of dictionary (/buffer/) begins with a valid block of parenthesis (/start/ and /end/),
+* and the current /speech/ matches such a block.
+* Then, moves both the pointers after the match. 
+* Notice:
+* 1. /buffer/ must begin with /start/ char.
+* 2. The function is recursive, thus it handles different kinds of parenthesis: []  <>  ()
+* 3. The function starts with the following control: expression is ok iff it contains a good number of /start/ and /end/ parenthesis.
+*    This control, IMO, does not check the different kinds of parenthesis.
+*/
 int any_match(char **buffer,char **speech,char start,char end) {
 
   if(**buffer != start) {
@@ -272,7 +284,7 @@ int any_match(char **buffer,char **speech,char start,char end) {
       ++buf;
     }
 
-    if(*buf == *tmpSpeech) {
+    if(toupper(*buf) == toupper(*tmpSpeech)) { //FIX: case insensitive
       ++buf;
       ++tmpSpeech;
     } else {
@@ -298,6 +310,9 @@ int any_match(char **buffer,char **speech,char start,char end) {
   return 0;
 }
 
+/**
+* Return the remaining part of the line
+*/
 char *line_match(char *buf,char **tmpSpeech) {
   // buf should be right before the name of the
   // variable, on a space. What we need to do is skip the name
@@ -427,6 +442,10 @@ char *line_match(char *buf,char **tmpSpeech) {
   return NULL;
 }
 
+/**
+* Return true if the text contained in /speech/ (input) matches the text-pattern contained in /buf/ (line of dictionary)
+* Assumes there are no blanks at the beginning
+*/
 int is_match(char *speech,char *buf) {
   char *ptr;
   char *speechPtr;
@@ -502,7 +521,7 @@ int check_equality(char *speech,char *buffer) {
         return 0;
       }
     else {
-      if(*speech != *buffer) {
+      if(toupper(*speech) != toupper(*buffer)) {  //FIX: case insensitive
       	//	printf("%c != %c\n",*speech,*buffer); // DEBUG
       	return 0;
       }
